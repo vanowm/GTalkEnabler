@@ -5,8 +5,28 @@
     android:layout_height="fill_parent"
     >
 <TextView  
-    android:layout_width="fill_parent" 
+    android:layout_width="wrap_content" 
     android:layout_height="wrap_content" 
-    android:text="@string/hello"
+    android:layout_marginTop="20dp"
+    android:layout_marginLeft="5dp"
+    android:text="Make selection and press Save"
     />
+<CheckBox 
+	android:id="@+id/allow_3g_chat"
+    android:layout_width="wrap_content" 
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="5dp"
+    android:layout_marginTop="20dp" 
+    android:text="Allow 3G/4G GTalk Video Chat"
+/>
+<Button
+	android:id="@+id/save_button"
+    android:layout_width="wrap_content" 
+    android:layout_height="wrap_content"
+    android:layout_marginTop="20dp"
+    android:paddingLeft="30dp"
+    android:paddingRight="30dp"
+    android:layout_gravity="center_horizontal" 
+    android:text="Save"
+/>
 </LinearLayout>
