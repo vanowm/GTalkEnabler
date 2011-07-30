@@ -1,0 +1,2 @@
+call ant release
+pause

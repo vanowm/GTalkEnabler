@@ -1,0 +1,7 @@
+syntax: glob
+bin/
+gen/
+local.properties
+apk/GTalkEnabler.apk
+key/gtalkenabler.keystore
+key/passwords.txt
