@@ -15,6 +15,7 @@
 	android:id="@+id/allow_3g_chat"
     android:layout_width="wrap_content" 
     android:layout_height="wrap_content"
+    android:paddingRight="10dp"
     android:layout_marginLeft="5dp"
     android:layout_marginTop="20dp" 
     android:text="Allow 3G/4G GTalk Video Chat"
