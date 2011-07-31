@@ -21,6 +21,7 @@ public class GTalkEnablerActivity extends Activity {
 	
 	private static final int DIALOG_NOT_ROOT = 101;
 	private static final int DIALOG_DB_ERROR = 102;
+	private static final int DIALOG_CONFIRM = 103;
 	private static final String DB_FILE_NAME = "gservices.db";
 	private static final String DB_PATH = "/data/data/com.google.android.gsf/databases/";
 	private static final String DB_TABLE = "main";
@@ -41,7 +42,6 @@ public class GTalkEnablerActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				new WriteSettingTask(mEnableCheckBox.isChecked()).execute();
-				finish();
 			}        	
         });
                 
@@ -58,18 +58,20 @@ public class GTalkEnablerActivity extends Activity {
     protected Dialog onCreateDialog(int id) {
     	switch (id) {
     		case DIALOG_NOT_ROOT:
-    			return createDialog("Root Denied", "Unable to get root access. Exiting application.");
+    			return createDialog("Root Denied", "Unable to get root access. Exiting application.", android.R.drawable.ic_dialog_alert);
     		case DIALOG_DB_ERROR:
-    			return createDialog("Database Error", "Unable to access database. Is video chat enabled Talk installed?");
+    			return createDialog("Database Error", "Unable to access database. Is video chat enabled Talk installed?", android.R.drawable.ic_dialog_alert);
+    		case DIALOG_CONFIRM:
+    			return createDialog("Done", "Settings updated. You may need to reboot.", android.R.drawable.ic_dialog_info);
     		default:
     			return super.onCreateDialog(id);
     	}
     }
     
-    private Dialog createDialog(String title, String message) {
+    private Dialog createDialog(String title, String message, int icon) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(title)
-            .setIcon(android.R.drawable.ic_dialog_alert)
+            .setIcon(icon)
             .setMessage(message)
             .setCancelable(false)
             .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -124,7 +126,6 @@ public class GTalkEnablerActivity extends Activity {
 			
 			try {
 				db = openOrCreateDatabase(getDatabasePath(DB_FILE_NAME).getName(), SQLiteDatabase.OPEN_READWRITE, null);
-				//db = SQLiteDatabase.openDatabase(mPrivateDatabaseFile, null, );
 			} catch (Exception ex) {
 				return null;
 			}
@@ -200,7 +201,7 @@ public class GTalkEnablerActivity extends Activity {
 			if (result == null || result == false)
 				showDialog(DIALOG_DB_ERROR);
 			else
-				finish();
+				showDialog(DIALOG_CONFIRM);
 		}
     }
 }
