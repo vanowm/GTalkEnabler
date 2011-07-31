@@ -6,6 +6,7 @@ import java.io.IOException;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
@@ -118,19 +119,38 @@ public class GTalkEnablerActivity extends Activity {
     	return false;
     }
     
-    private class ReadSettingTask extends AsyncTask<Void, Void, Boolean> {
+    private abstract class BaseTask extends AsyncTask<Void, Void, Boolean> {
+    	private ProgressDialog mProgressDialog;
+    	
+    	@Override
+    	protected void onPreExecute() {
+    		super.onPreExecute();
+    		
+    		mProgressDialog = ProgressDialog.show(GTalkEnablerActivity.this, null, "Please Wait", true, false);
+    	}
+    	
+    	@Override
+    	protected void onPostExecute(Boolean result) {
+    		super.onPostExecute(result);
+    		
+    		mProgressDialog.dismiss();
+    	}
+    	
+    	@Override
+    	protected void onCancelled() {
+    		super.onCancelled();
+
+    		mProgressDialog.dismiss();
+    	}
+    }
+    
+    private class ReadSettingTask extends BaseTask {
 		@Override
-		protected Boolean doInBackground(Void... arg0) {
-			
-			SQLiteDatabase db;
+		protected Boolean doInBackground(Void... arg0) {			
+			SQLiteDatabase db = null;
 			
 			try {
 				db = openOrCreateDatabase(getDatabasePath(DB_FILE_NAME).getName(), SQLiteDatabase.OPEN_READWRITE, null);
-			} catch (Exception ex) {
-				return null;
-			}
-	        
-			try {
 				Cursor cursor = db.query(DB_TABLE, new String[] { "`value`" }, "`name` = ?", new String[] { DB_SETTING }, null, null, null);
 				
 				if (!cursor.moveToFirst()) {
@@ -139,8 +159,12 @@ public class GTalkEnablerActivity extends Activity {
 				}
 				
 				return cursor.getString(0).compareToIgnoreCase("true") == 0;
+			} catch (Exception ex) {
+				ex.printStackTrace();
+				return null;
 			} finally {
-				db.close();
+				if (db != null && db.isOpen())
+					db.close();
 			}
 		}
 
@@ -155,7 +179,7 @@ public class GTalkEnablerActivity extends Activity {
 		}
     }
     
-    private class WriteSettingTask extends AsyncTask<Void, Void, Boolean> {
+    private class WriteSettingTask extends BaseTask {
     	private boolean mWifiOnly;    	
     	
     	public WriteSettingTask(boolean wifiOnly) {
@@ -165,18 +189,14 @@ public class GTalkEnablerActivity extends Activity {
 		@Override
 		protected Boolean doInBackground(Void... arg0) {
 			
-			SQLiteDatabase db;
+			SQLiteDatabase db = null;
 			ContentValues values = new ContentValues();
 			values.put("name", DB_SETTING);
 			values.put("value", Boolean.toString(mWifiOnly));
 			
 			try {
 				db = openOrCreateDatabase(getDatabasePath(DB_FILE_NAME).getName(), SQLiteDatabase.OPEN_READWRITE, null);
-			} catch (Exception ex) {
-				return null;
-			}
-	        
-			try {
+
 				if (mMustInsert) {
 					db.insertOrThrow(DB_TABLE, null, values);
 				} else {
@@ -189,7 +209,7 @@ public class GTalkEnablerActivity extends Activity {
 				ex.printStackTrace();
 				return false;
 			} finally {
-				if (db.isOpen())
+				if (db != null && db.isOpen())
 					db.close();
 			}
 		}
