@@ -1,6 +1,6 @@
 package com.innodroid.gtalkenabler;
 
-import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 
 import android.app.Activity;
@@ -18,6 +18,9 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 
+import com.stericson.RootTools.RootTools;
+import com.stericson.RootTools.RootToolsException;
+
 public class GTalkEnablerActivity extends Activity {
 	
 	private static final int DIALOG_NOT_ROOT = 101;
@@ -27,8 +30,9 @@ public class GTalkEnablerActivity extends Activity {
 	private static final String DB_PATH = "/data/data/com.google.android.gsf/databases/";
 	private static final String DB_TABLE = "main";
 	private static final String DB_SETTING = "gtalk_vc_wifi_only";
-	private String mPrivateDatabaseFile;
-	private String mGoogleDatabaseFile;
+	private File mPrivateDatabaseFile;
+	private String mPrivateDatabasePath;
+	private String mGoogleDatabasePath;
 	private boolean mMustInsert;
 	private CheckBox mEnableCheckBox;
 
@@ -43,13 +47,14 @@ public class GTalkEnablerActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				new WriteSettingTask(mEnableCheckBox.isChecked()).execute();
-			}        	
+			}
         });
-                
-        mGoogleDatabaseFile = DB_PATH + DB_FILE_NAME;
-        mPrivateDatabaseFile = getDatabasePath(DB_FILE_NAME).getAbsolutePath();
+
+        mGoogleDatabasePath = DB_PATH + DB_FILE_NAME;
+        mPrivateDatabaseFile = new File(getFilesDir(), DB_FILE_NAME);
+        mPrivateDatabasePath = mPrivateDatabaseFile.getAbsolutePath();
         
-        if (copyFileAsRoot(mGoogleDatabaseFile, mPrivateDatabaseFile))
+        if (RootTools.isRootAvailable() && RootTools.isAccessGiven())
         	new ReadSettingTask().execute();
         else
         	showDialog(DIALOG_NOT_ROOT);
@@ -83,40 +88,9 @@ public class GTalkEnablerActivity extends Activity {
         return builder.create();
     }
     
-    // 
-    // This code from: 
-    //		http://www.stealthcopter.com/blog/2010/01/android-requesting-root-access-in-your-app/
-    //
-    private boolean copyFileAsRoot(String src, String dest) {
-    	Process p;  
-    	try {  
-    	   // Preform su to get root privledges  
-    	   p = Runtime.getRuntime().exec("su");   
-    	  
-    	   // Attempt to write a file to a root-only  
-    	   DataOutputStream os = new DataOutputStream(p.getOutputStream());  
-    	   os.writeBytes("echo \"Do I have root?\" >/system/sd/temporary.txt\n");  
-    	  
-    	   os.writeBytes("cp -f " + src + " " + dest + "\n");
-    	   os.writeBytes("chmod a+rw " + dest + "\n");
-    	   
-    	   // Close the terminal  
-    	   os.writeBytes("exit\n");  
-    	   os.flush();
-    	   try {  
-    	      p.waitFor();  
-    	           if (p.exitValue() != 255) {  
-    	              // TODO Code to run on success  
-    	              return true;
-    	           }  
-    	   } catch (InterruptedException e) {  
-    	      e.printStackTrace();  
-    	   }  
-    	} catch (IOException e) {  
-  	      e.printStackTrace();  
-    	}
-    	
-    	return false;
+    private void copyFileAsRoot(String src, String dest) throws IOException, InterruptedException, RootToolsException {
+	    RootTools.sendShell("cp -f " + src + " " + dest + "\n");
+	    RootTools.sendShell("chmod 777 " + dest + "\n");
     }
     
     private abstract class BaseTask extends AsyncTask<Void, Void, Boolean> {
@@ -150,8 +124,10 @@ public class GTalkEnablerActivity extends Activity {
 			SQLiteDatabase db = null;
 			
 			try {
-				db = openOrCreateDatabase(getDatabasePath(DB_FILE_NAME).getName(), SQLiteDatabase.OPEN_READWRITE, null);
-				Cursor cursor = db.query(DB_TABLE, new String[] { "`value`" }, "`name` = ?", new String[] { DB_SETTING }, null, null, null);
+				copyFileAsRoot(mGoogleDatabasePath, mPrivateDatabasePath);
+				
+				db = SQLiteDatabase.openDatabase(mPrivateDatabasePath, null, SQLiteDatabase.OPEN_READWRITE);
+				Cursor cursor = db.query(DB_TABLE, new String[] { "value" }, "name = ?", new String[] { DB_SETTING }, null, null, null);
 				
 				if (!cursor.moveToFirst()) {
 					mMustInsert = true; 
@@ -195,7 +171,7 @@ public class GTalkEnablerActivity extends Activity {
 			values.put("value", Boolean.toString(mWifiOnly));
 			
 			try {
-				db = openOrCreateDatabase(getDatabasePath(DB_FILE_NAME).getName(), SQLiteDatabase.OPEN_READWRITE, null);
+				db = SQLiteDatabase.openDatabase(mPrivateDatabasePath, null, SQLiteDatabase.OPEN_READWRITE);
 
 				if (mMustInsert) {
 					db.insertOrThrow(DB_TABLE, null, values);
@@ -204,7 +180,8 @@ public class GTalkEnablerActivity extends Activity {
 				}
 				db.close();
 				
-				return copyFileAsRoot(mPrivateDatabaseFile, mGoogleDatabaseFile);
+				copyFileAsRoot(mPrivateDatabasePath, mGoogleDatabasePath);
+				return true;
 			} catch (Exception ex) {
 				ex.printStackTrace();
 				return false;
