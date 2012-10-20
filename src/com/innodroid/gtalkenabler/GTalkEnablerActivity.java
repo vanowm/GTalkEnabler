@@ -12,7 +12,6 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -57,9 +56,9 @@ public class GTalkEnablerActivity extends Activity {
         mPrivateDatabasePath = mPrivateDatabaseFile.getAbsolutePath();
         
         // I wish this worked on honeycomb or later... but it doesnt 
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD_MR1)
-        	showDialog(DIALOG_BAD_VERSION);
-        else if (RootTools.isRootAvailable() && RootTools.isAccessGiven())
+        //if (Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD_MR1)
+        	//showDialog(DIALOG_BAD_VERSION);
+        if (RootTools.isRootAvailable() && RootTools.isAccessGiven())
         	new ReadSettingTask().execute();
         else
         	showDialog(DIALOG_NOT_ROOT);
