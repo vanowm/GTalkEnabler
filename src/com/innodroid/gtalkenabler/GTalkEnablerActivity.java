@@ -12,6 +12,7 @@ import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -25,7 +26,8 @@ public class GTalkEnablerActivity extends Activity {
 	
 	private static final int DIALOG_NOT_ROOT = 101;
 	private static final int DIALOG_DB_ERROR = 102;
-	private static final int DIALOG_CONFIRM = 103;
+	private static final int DIALOG_BAD_VERSION = 103;
+	private static final int DIALOG_CONFIRM = 104;
 	private static final String DB_FILE_NAME = "gservices.db";
 	private static final String DB_PATH = "/data/data/com.google.android.gsf/databases/";
 	private static final String DB_TABLE = "main";
@@ -54,7 +56,10 @@ public class GTalkEnablerActivity extends Activity {
         mPrivateDatabaseFile = new File(getFilesDir(), DB_FILE_NAME);
         mPrivateDatabasePath = mPrivateDatabaseFile.getAbsolutePath();
         
-        if (RootTools.isRootAvailable() && RootTools.isAccessGiven())
+        // I wish this worked on honeycomb or later... but it doesnt 
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD_MR1)
+        	showDialog(DIALOG_BAD_VERSION);
+        else if (RootTools.isRootAvailable() && RootTools.isAccessGiven())
         	new ReadSettingTask().execute();
         else
         	showDialog(DIALOG_NOT_ROOT);
@@ -67,6 +72,8 @@ public class GTalkEnablerActivity extends Activity {
     			return createDialog("Root Denied", "Unable to get root access. Exiting application.", android.R.drawable.ic_dialog_alert);
     		case DIALOG_DB_ERROR:
     			return createDialog("Database Error", "Unable to access database. Is video chat enabled Talk installed?", android.R.drawable.ic_dialog_alert);
+    		case DIALOG_BAD_VERSION:
+    			return createDialog("Sorry", "This doesn't work on your version of Android OS", android.R.drawable.ic_dialog_alert);
     		case DIALOG_CONFIRM:
     			return createDialog("Done", "Settings updated. You may need to reboot.", android.R.drawable.ic_dialog_info);
     		default:
