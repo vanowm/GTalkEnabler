@@ -1,33 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
-<TextView  
-    android:layout_width="wrap_content" 
-    android:layout_height="wrap_content" 
-    android:layout_marginTop="20dp"
-    android:layout_marginLeft="5dp"
-    android:text="Make selection and press Save"
-    />
-<CheckBox 
-	android:id="@+id/allow_3g_chat"
-    android:layout_width="wrap_content" 
-    android:layout_height="wrap_content"
-    android:paddingRight="10dp"
-    android:layout_marginLeft="5dp"
-    android:layout_marginTop="20dp" 
-    android:text="Allow 3G/4G GTalk Video Chat"
-/>
-<Button
-	android:id="@+id/save_button"
-    android:layout_width="wrap_content" 
-    android:layout_height="wrap_content"
-    android:layout_marginTop="20dp"
-    android:paddingLeft="30dp"
-    android:paddingRight="30dp"
-    android:layout_gravity="center_horizontal" 
-    android:text="Save"
-/>
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical"
+	tools:context=".GTalkEnablerActivity" >
+
+	<LinearLayout
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_gravity="center_horizontal"
+	    android:layout_marginBottom="10dp"
+	    android:orientation="horizontal" >
+
+		<TextView
+			android:id="@+id/textView"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center_vertical"
+			android:layout_marginLeft="5dp"
+			android:text="3G/4G/LTE %APP% Video Chat is"
+			android:textAppearance="?android:attr/textAppearanceSmall" />
+
+		<TextView
+		    android:id="@+id/status_string"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_gravity="center_horizontal"
+		    android:layout_marginLeft="3dp"
+		    android:layout_marginRight="5dp"
+		    android:text="disabled"
+		    android:textAppearance="?android:attr/textAppearanceSmall"
+		    android:textStyle="bold" />
+
+	</LinearLayout>
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content" >
+
+		<RadioGroup
+			android:id="@+id/radiogroup_auto"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_gravity="left">
+
+			<RadioButton
+			    android:id="@+id/radio_kill"
+			    android:layout_width="match_parent"
+			    android:layout_height="wrap_content"
+			    android:text="Restart %APP%" />
+
+			<RadioButton
+				android:id="@+id/radio_reboot"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="Reboot" />
+
+			<RadioButton
+			    android:id="@+id/radio_none"
+			    android:layout_width="match_parent"
+			    android:layout_height="wrap_content"
+			    android:checked="true"
+			    android:text="Reboot manually" />
+
+		</RadioGroup>
+	</LinearLayout>
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content" >
+		<Button
+			android:id="@+id/button_enable"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:paddingLeft="10dp"
+			android:paddingRight="10dp"
+			android:text="Enable" />
+
+		<Button
+			android:id="@+id/button_disable"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:paddingLeft="10dp"
+			android:paddingRight="10dp"
+			android:text="Disable" />
+
+	</LinearLayout>
 </LinearLayout>

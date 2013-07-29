@@ -1,5 +1,8 @@
 
-bin/
+bin/*
+!bin/*-release.apk
+!bin/*-release-unaligned.apk
+!bin/*-release-unsigned.apk
 gen/
 #ignore thumbnails created by windows
 Thumbs.db
@@ -21,10 +24,10 @@ Thumbs.db
 *.cache
 *.ilk
 *.log
-[Bb]in
 [Dd]ebug*/
 *.lib
 *.sbr
+*.settings/*
 obj/
 [Rr]elease*/
 _ReSharper*/
