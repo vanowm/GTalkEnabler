@@ -23,9 +23,10 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
+import android.widget.Toast;
 
 import com.stericson.RootTools.RootTools;
-import com.stericson.RootTools.RootToolsException;
+import com.stericson.RootTools.execution.CommandCapture;
 
 public class GTalkEnablerActivity extends Activity
 {
@@ -39,19 +40,25 @@ public class GTalkEnablerActivity extends Activity
 	private static final int AUTO_KILL = 2;
 	private static final String DB_FILE_NAME = "gservices.db";
 	private static final String DB_PATH = "/data/data/com.google.android.gsf/databases/";
-	private static String DB_TABLE = "overrides";
+	private static String DB_TABLE1 = "overrides";
 	private static final String DB_TABLE2 = "main";
 	private static final String DB_SETTING = "gtalk_vc_wifi_only";
 	private File mPrivateDatabaseFile;
 	private String mPrivateDatabasePath;
 	private String mGoogleDatabasePath;
-	private boolean mMustInsert;
+	private boolean mMustInsert1 = false;
+	private boolean mMustInsert2 = false;
+	private int mResult1 = 0;
+	private int mResult2 = 0;
 	private int sAuto;
 	private String appName = "GTalk";
 	private String sSettings = "settings";
 	private RadioGroup mAuto;
 	private int aAuto[] = {R.id.radio_none, R.id.radio_reboot, R.id.radio_kill};
 	private PackageManager pm;
+	private int cmdId = 0;
+	private CharSequence toast;
+
 
 	@Override
 	public void onCreate(Bundle savedInstanceState)
@@ -120,7 +127,8 @@ public class GTalkEnablerActivity extends Activity
 			new ReadSettingTask().execute();
 		else
 			showDialog(DIALOG_NOT_ROOT);
-	}
+
+		}
 
 	@Override
 	protected Dialog onCreateDialog(int id)
@@ -158,10 +166,15 @@ public class GTalkEnablerActivity extends Activity
 		return builder.create();
 	}
 
-	private void copyFileAsRoot(String src, String dest) throws IOException, InterruptedException, RootToolsException
+	private void copyFileAsRoot(String src, String dest) throws IOException, InterruptedException
 	{
-		RootTools.sendShell("cp -f " + src + " " + dest + "\n");
-		RootTools.sendShell("chmod 777 " + dest + "\n");
+		try
+		{
+			CommandCapture cmd = new CommandCapture(cmdId++, "cp -f " + src + " " + dest);
+			RootTools.getShell(true).add(cmd).waitForFinish();
+			cmd = new CommandCapture(cmdId++, "chmod 777 " + dest);
+			RootTools.getShell(true).add(cmd).waitForFinish();
+		}catch(Exception e){}
 	}
 
 	private abstract class BaseTask extends AsyncTask<Void, Void, Boolean>
@@ -195,58 +208,58 @@ public class GTalkEnablerActivity extends Activity
 		protected Boolean doInBackground(Void... arg0)
 		{
 			SQLiteDatabase db = null;
-			
+
+			Boolean r = false;
 			try
 			{
 				copyFileAsRoot(mGoogleDatabasePath, mPrivateDatabasePath);
 				
 				db = SQLiteDatabase.openDatabase(mPrivateDatabasePath, null, SQLiteDatabase.OPEN_READWRITE);
-				Cursor cursor = db.query(DB_TABLE, new String[] { "value" }, "name = ?", new String[] { DB_SETTING }, null, null, null);
-				
+			}
+			catch(Exception e)
+			{
+				return null;
+			}
+			try
+			{
+				Cursor cursor = db.query(DB_TABLE1, new String[] { "value" }, "name = ?", new String[] { DB_SETTING }, null, null, null);
+
+				r = true;
 				if (!cursor.moveToFirst())
 				{
-					mMustInsert = true; 
-					return true;
+					mMustInsert1 = true; 
+					mResult1 = 3;
 				}
-				return cursor.getString(0).compareToIgnoreCase("true") == 0;
+				else
+					mResult1 = cursor.getString(0).compareToIgnoreCase("true") == 0 ? 1 : 2;
 			}
 			catch (Exception ex)
 			{
 				ex.printStackTrace();
-				if (db != null && db.isOpen())
-					db.close();
-
-				try
-				{
-					copyFileAsRoot(mGoogleDatabasePath, mPrivateDatabasePath);
-					DB_TABLE = DB_TABLE2;
-					db = SQLiteDatabase.openDatabase(mPrivateDatabasePath, null, SQLiteDatabase.OPEN_READWRITE);
-					Cursor cursor = db.query(DB_TABLE2, new String[] { "value" }, "name = ?", new String[] { DB_SETTING }, null, null, null);
-					if (!cursor.moveToFirst())
-					{
-						mMustInsert = true; 
-						return true;
-					}
-
-					return cursor.getString(0).compareToIgnoreCase("true") == 0;
-				}
-				catch (Exception ex2)
-				{
-					ex2.printStackTrace();
-					return null;
-				}
-				finally
-				{
-					if (db != null && db.isOpen())
-						db.close();
-				}
-
 			}
-			finally
+
+			try
 			{
-				if (db != null && db.isOpen())
-					db.close();
+				Cursor cursor = db.query(DB_TABLE2, new String[] { "value" }, "name = ?", new String[] { DB_SETTING }, null, null, null);
+
+				r = true;
+				if (!cursor.moveToFirst())
+				{
+					mMustInsert2 = true; 
+					mResult2 = 3;
+				}
+				else
+					mResult2 = cursor.getString(0).compareToIgnoreCase("true") == 0 ? 1 : 2;
 			}
+			catch (Exception ex)
+			{
+				ex.printStackTrace();
+			}
+
+			if (db != null && db.isOpen())
+				db.close();
+
+			return r;
 		}
 
 		@Override
@@ -257,7 +270,15 @@ public class GTalkEnablerActivity extends Activity
 			if (result == null)
 				showDialog(DIALOG_DB_ERROR);
 			else
-				((TextView)findViewById(R.id.status_string)).setText(result ? "disabled" : "enabled");
+			{
+				if (mResult1 == 2 || mResult2 == 2)
+				{
+					TextView t = (TextView)findViewById(R.id.textView2);
+					t.setText(t.getText().toString() + (mResult1 == 2 ? " perm." : " temp."));
+				}
+				((TextView)findViewById(R.id.status_string)).setText((mResult1 != 2 && mResult2 != 2 ? "disabled" : "enabled"));
+			}
+			
 		}
 	}
 	
@@ -281,14 +302,20 @@ public class GTalkEnablerActivity extends Activity
 			try
 			{
 				db = SQLiteDatabase.openDatabase(mPrivateDatabasePath, null, SQLiteDatabase.OPEN_READWRITE);
-	
-				if (mMustInsert)
-					db.insertOrThrow(DB_TABLE, null, values);
-				else
-					db.update(DB_TABLE, values, "name = ?", new String[] { DB_SETTING });
-	
+
+				if (mResult1 > 0)
+					if (mMustInsert1)
+						db.insertOrThrow(DB_TABLE1, null, values);
+					else
+						db.update(DB_TABLE1, values, "name = ?", new String[] { DB_SETTING });
+
+				if (mResult2 > 0)
+					if (mMustInsert2)
+						db.insertOrThrow(DB_TABLE2, null, values);
+					else
+						db.update(DB_TABLE2, values, "name = ?", new String[] { DB_SETTING });
+
 				db.close();
-				
 				copyFileAsRoot(mPrivateDatabasePath, mGoogleDatabasePath);
 				return true;
 			}
@@ -313,25 +340,39 @@ public class GTalkEnablerActivity extends Activity
 				showDialog(DIALOG_DB_ERROR);
 			else
 			{
-				String command = null;
+				String command = "";
 				switch(getId(mAuto.getCheckedRadioButtonId()))
 				{
 					case AUTO_NONE:
 						showDialog(DIALOG_CONFIRM);
 						break;
 					case AUTO_REBOOT:
-						command = "su -c reboot";
+						command = "reboot";
+						toast = "Rebooting";
 						break;
 					case AUTO_KILL:
-						command = "su -c am start -a android.intent.action.MAIN -n com.google.android.talk/com.google.android.talk.SignoutActivity -d content://com.google.android.providers.talk/accounts && am force-stop com.google.android.talk && am force-stop com.google.android.gsf && am broadcast -a android.intent.action.PACKAGE_ADDED -n com.google.android.gsf/.gtalkservice.PackageInstalledReceiver";
+						command = "am force-stop com.google.android.talk\n"
+								+ "am force-stop com.google.android.gsf\n"
+								+ "am broadcast -a android.accounts.LOGIN_ACCOUNTS_CHANGED -n com.google.android.gsf/.gtalkservice.ServiceAutoStarter\n"
+								+ "am broadcast -a android.intent.action.PACKAGE_ADDED -n com.google.android.gsf/.gtalkservice.PackageInstalledReceiver\n"
+								+ "am start -a android.intent.action.MAIN -n com.google.android.talk/com.google.android.talk.SigningInActivity";
+						toast = "Restarting " + appName; 
 						break;
 				}
-				if (command != null)
-				try
-				{
-					Runtime.getRuntime().exec(command);
-				} catch (Exception e) {}
-				finish();
+				if (command != "")
+					try
+					{
+						CommandCapture cmd = new CommandCapture(cmdId++, command);
+						RootTools.getShell(true).add(cmd);
+						Toast.makeText(getApplicationContext(), toast, Toast.LENGTH_LONG).show();
+					}
+					catch (Exception e)
+					{}
+					finally
+					{
+						finish();
+					}
+
 			}
 		}
 	}
